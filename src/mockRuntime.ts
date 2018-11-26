@@ -35,7 +35,6 @@ export class MockRuntime extends EventEmitter {
 	// so that the frontend can match events with breakpoints.
 	private _breakpointId = 1;
 
-
 	constructor() {
 		super();
 	}
