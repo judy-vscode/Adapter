@@ -11,6 +11,7 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { basename } from 'path';
 import { MockRuntime, MockBreakpoint } from './mockRuntime';
+import { herald } from './selfsocket';
 const { Subject } = require('await-notify');
 
 
@@ -35,7 +36,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	private static THREAD_ID = 1;
 
 	// a Mock runtime (or debugger)
-	private _runtime: MockRuntime;
+	private _herald: herald;
 
 	private _variableHandles = new Handles<string>();
 
@@ -52,34 +53,42 @@ export class MockDebugSession extends LoggingDebugSession {
 		this.setDebuggerLinesStartAt1(false);
 		this.setDebuggerColumnsStartAt1(false);
 
-		this._runtime = new MockRuntime();
+		this._herald = new herald();
 
 		// setup event handlers
-		this._runtime.on('stopOnEntry', () => {
+		this._herald.on('stopOnEntry', () => {
 			this.sendEvent(new StoppedEvent('entry', MockDebugSession.THREAD_ID));
 		});
-		this._runtime.on('stopOnStep', () => {
+		this._herald.on('stopOnStep', () => {
 			this.sendEvent(new StoppedEvent('step', MockDebugSession.THREAD_ID));
 		});
-		this._runtime.on('stopOnBreakpoint', () => {
+		this._herald.on('stopOnBreakpoint', () => {
 			this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.THREAD_ID));
 		});
-		this._runtime.on('stopOnException', () => {
+		this._herald.on('stopOnException', () => {
 			this.sendEvent(new StoppedEvent('exception', MockDebugSession.THREAD_ID));
 		});
-		this._runtime.on('breakpointValidated', (bp: MockBreakpoint) => {
+		this._herald.on('breakpointValidated', (bp: MockBreakpoint) => {
 			this.sendEvent(new BreakpointEvent('changed', <DebugProtocol.Breakpoint>{ verified: bp.verified, id: bp.id }));
 		});
-		this._runtime.on('output', (text, filePath, line, column) => {
+		this._herald.on('output', (text, filePath, line, column) => {
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`);
 			e.body.source = this.createSource(filePath);
 			e.body.line = this.convertDebuggerLineToClient(line);
 			e.body.column = this.convertDebuggerColumnToClient(column);
 			this.sendEvent(e);
 		});
-		this._runtime.on('end', () => {
+		this._herald.on('end', () => {
 			this.sendEvent(new TerminatedEvent());
 		});
+		this._herald.on('end', (data) => {
+			this.processResponse(data);
+		});
+	}
+
+	protected processResponse(data) {
+		//TODO classify response
+		this.sendResponse(data);
 	}
 
 	/**
@@ -128,7 +137,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		await this._configurationDone.wait(1000);
 
 		// start the program in the runtime
-		this._runtime.start(args.program, !!args.stopOnEntry);
+		this._herald.start(args.program, !!args.stopOnEntry);
 
 		this.sendResponse(response);
 	}
@@ -139,11 +148,11 @@ export class MockDebugSession extends LoggingDebugSession {
 		const clientLines = args.lines || [];
 
 		// clear all breakpoints for this file
-		this._runtime.clearBreakpoints(path);
+		this._herald.clearBreakpoints(path);
 
 		// set and verify breakpoint locations
 		const actualBreakpoints = clientLines.map(l => {
-			let { verified, line, id } = this._runtime.setBreakPoint(path, this.convertClientLineToDebugger(l));
+			let { verified, line, id } = this._herald.setBreakPoint(path, this.convertClientLineToDebugger(l));
 			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
 			bp.id= id;
 			return bp;
@@ -173,7 +182,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
 		const endFrame = startFrame + maxLevels;
 
-		const stk = this._runtime.stack(startFrame, endFrame);
+		const stk = this._herald.stack(startFrame, endFrame);
 
 		response.body = {
 			stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
@@ -233,22 +242,22 @@ export class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
-		this._runtime.continue();
+		this._herald.continue();
 		this.sendResponse(response);
 	}
 
 	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
-		this._runtime.continue(true);
+		this._herald.continue(true);
 		this.sendResponse(response);
  	}
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._runtime.step();
+		this._herald.step();
 		this.sendResponse(response);
 	}
 
 	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
-		this._runtime.step(true);
+		this._herald.step(true);
 		this.sendResponse(response);
 	}
 
@@ -260,15 +269,15 @@ export class MockDebugSession extends LoggingDebugSession {
 			// 'evaluate' supports to create and delete breakpoints from the 'repl':
 			const matches = /new +([0-9]+)/.exec(args.expression);
 			if (matches && matches.length === 2) {
-				const mbp = this._runtime.setBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-				const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._runtime.sourceFile));
+				const mbp = this._herald.setBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+				const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._herald.sourceFile));
 				bp.id= mbp.id;
 				this.sendEvent(new BreakpointEvent('new', bp));
 				reply = `breakpoint created`;
 			} else {
 				const matches = /del +([0-9]+)/.exec(args.expression);
 				if (matches && matches.length === 2) {
-					const mbp = this._runtime.clearBreakPoint(this._runtime.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+					const mbp = this._herald.clearBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
 					if (mbp) {
 						const bp = <DebugProtocol.Breakpoint> new Breakpoint(false);
 						bp.id= mbp.id;
