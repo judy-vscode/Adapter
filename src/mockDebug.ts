@@ -81,7 +81,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.on('end', () => {
 			this.sendEvent(new TerminatedEvent());
 		});
-		this._herald.on('end', (data) => {
+		this._herald.on('response', (data) => {
 			this.processResponse(data);
 		});
 	}
@@ -95,6 +95,9 @@ export class MockDebugSession extends LoggingDebugSession {
 	 * The 'initialize' request is the first request called by the frontend
 	 * to interrogate the features the debug adapter provides.
 	 */
+	//no involving debugger, request/response between DA and Vscode
+	//https://microsoft.github.io/debug-adapter-protocol/specification#Events_Initialized
+
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
 		// build and return the capabilities of this debug adapter:
@@ -109,7 +112,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// make VS Code to show a 'step back' button
 		response.body.supportsStepBack = true;
 
-		this.sendResponse(response);
+		// this.sendResponse(response);
 
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
 		// we request them early by sending an 'initializeRequest' to the frontend.
@@ -139,57 +142,59 @@ export class MockDebugSession extends LoggingDebugSession {
 		// start the program in the runtime
 		this._herald.start(args.program, !!args.stopOnEntry);
 
-		this.sendResponse(response);
+		// this.sendResponse(response);
 	}
 
 	protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
 
 		const path = <string>args.source.path;
-		const clientLines = args.lines || [];
+		var clientLines = args.lines || [];
 
 		// clear all breakpoints for this file
 		this._herald.clearBreakpoints(path);
 
 		// set and verify breakpoint locations
-		const actualBreakpoints = clientLines.map(l => {
-			let { verified, line, id } = this._herald.setBreakPoint(path, this.convertClientLineToDebugger(l));
-			const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
-			bp.id= id;
-			return bp;
-		});
+		// const actualBreakpoints = clientLines.map(l => {
+		// 	let { verified, line, id } = this._herald.setBreakPoint(path, this.convertClientLineToDebugger(l));
+		// 	const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line));
+		// 	bp.id= id;
+		// 	return bp;
+		// });
+		this._herald.setBreakPoints(path, clientLines);
+
 
 		// send back the actual breakpoint positions
-		response.body = {
-			breakpoints: actualBreakpoints
-		};
-		this.sendResponse(response);
+		// response.body = {
+		// 	breakpoints: actualBreakpoints
+		// };
+		// this.sendResponse(response);
 	}
 
-	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+	// protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 
-		// runtime supports now threads so just return a default thread.
-		response.body = {
-			threads: [
-				new Thread(MockDebugSession.THREAD_ID, "thread 1")
-			]
-		};
-		this.sendResponse(response);
-	}
+	// 	// runtime supports now threads so just return a default thread.
+	// 	response.body = {
+	// 		threads: [
+	// 			new Thread(MockDebugSession.THREAD_ID, "thread 1")
+	// 		]
+	// 	};
+	// 	this.sendResponse(response);
+	// }
 
-	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+	// protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 
-		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
-		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
-		const endFrame = startFrame + maxLevels;
+	// 	const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+	// 	const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+	// 	const endFrame = startFrame + maxLevels;
 
-		const stk = this._herald.stack(startFrame, endFrame);
+	// 	const stk = this._herald.stack(startFrame, endFrame);
 
-		response.body = {
-			stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
-			totalFrames: stk.count
-		};
-		this.sendResponse(response);
-	}
+	// 	response.body = {
+	// 		stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
+	// 		totalFrames: stk.count
+	// 	};
+	// 	this.sendResponse(response);
+	// }
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 
@@ -201,7 +206,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			scopes: scopes
 		};
-		this.sendResponse(response);
+		// this.sendResponse(response);
 	}
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
@@ -238,62 +243,63 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			variables: variables
 		};
-		this.sendResponse(response);
+		// this.sendResponse(response);
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._herald.continue();
-		this.sendResponse(response);
+		// this.sendResponse(response);
 	}
 
-	protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
-		this._herald.continue(true);
-		this.sendResponse(response);
- 	}
+	// protected reverseContinueRequest(response: DebugProtocol.ReverseContinueResponse, args: DebugProtocol.ReverseContinueArguments) : void {
+	// 	this._herald.continue(true);
+	// 	this.sendResponse(response);
+	 // }
+
+	// protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
+	// 	this._herald.step(true);
+	// 	this.sendResponse(response);
+	// }
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._herald.step();
-		this.sendResponse(response);
+		// this.sendResponse(response);
 	}
 
-	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
-		this._herald.step(true);
-		this.sendResponse(response);
-	}
+	//TODO!!!
+	// protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 
-	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+	// 	let reply: string | undefined = undefined;
 
-		let reply: string | undefined = undefined;
+	// 	if (args.context === 'repl') {
+	// 		// 'evaluate' supports to create and delete breakpoints from the 'repl':
+	// 		const matches = /new +([0-9]+)/.exec(args.expression);
+	// 		if (matches && matches.length === 2) {
+	// 			const mbp = this._herald.setBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+	// 			const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._herald.sourceFile));
+	// 			bp.id= mbp.id;
+	// 			this.sendEvent(new BreakpointEvent('new', bp));
+	// 			reply = `breakpoint created`;
+	// 		} else {
+	// 			const matches = /del +([0-9]+)/.exec(args.expression);
+	// 			if (matches && matches.length === 2) {
+	// 				const mbp = this._herald.clearBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
+	// 				if (mbp) {
+	// 					const bp = <DebugProtocol.Breakpoint> new Breakpoint(false);
+	// 					bp.id= mbp.id;
+	// 					this.sendEvent(new BreakpointEvent('removed', bp));
+	// 					reply = `breakpoint deleted`;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
 
-		if (args.context === 'repl') {
-			// 'evaluate' supports to create and delete breakpoints from the 'repl':
-			const matches = /new +([0-9]+)/.exec(args.expression);
-			if (matches && matches.length === 2) {
-				const mbp = this._herald.setBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-				const bp = <DebugProtocol.Breakpoint> new Breakpoint(mbp.verified, this.convertDebuggerLineToClient(mbp.line), undefined, this.createSource(this._herald.sourceFile));
-				bp.id= mbp.id;
-				this.sendEvent(new BreakpointEvent('new', bp));
-				reply = `breakpoint created`;
-			} else {
-				const matches = /del +([0-9]+)/.exec(args.expression);
-				if (matches && matches.length === 2) {
-					const mbp = this._herald.clearBreakPoint(this._herald.sourceFile, this.convertClientLineToDebugger(parseInt(matches[1])));
-					if (mbp) {
-						const bp = <DebugProtocol.Breakpoint> new Breakpoint(false);
-						bp.id= mbp.id;
-						this.sendEvent(new BreakpointEvent('removed', bp));
-						reply = `breakpoint deleted`;
-					}
-				}
-			}
-		}
-
-		response.body = {
-			result: reply ? reply : `evaluate(context: '${args.context}', '${args.expression}')`,
-			variablesReference: 0
-		};
-		this.sendResponse(response);
-	}
+	// 	response.body = {
+	// 		result: reply ? reply : `evaluate(context: '${args.context}', '${args.expression}')`,
+	// 		variablesReference: 0
+	// 	};
+	// 	this.sendResponse(response);
+	// }
 
 	//---- helpers
 
