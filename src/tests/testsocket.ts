@@ -1,13 +1,13 @@
 import { Server } from "http";
 import {parse, format} from 'json-rpc-protocol';
 import { EventEmitter } from 'events';
+import { SSL_OP_EPHEMERAL_RSA } from "constants";
 
-export class herald  extends EventEmitter {
+export class herald{
 	private svr;
 	private clt;
 
 	constructor() {
-		super();
 		var net = require('net');
 		var self = this;
 		this.svr = net.createServer(function(connection) {
@@ -29,7 +29,7 @@ export class herald  extends EventEmitter {
 		this.clt = net.connect({port: 18001}, function() {
 			console.log('连接到服务器！');
 		 });
-		// this.clt.write("hello world!\r\n");
+		this.clt.write("hello world!\r\n");
 		this.clt.on('data', function(this, data) {
 			console.log(data.toString());
 		});
@@ -40,7 +40,6 @@ export class herald  extends EventEmitter {
 	/*
 	Request Format:
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "launch", "params": {"stopOnEntry": stopOnEntry}}
-	00000112{"jsonrpc": "2.0", "id": 1, "method": "clearBreakpoints", "params": {"path": "C:\\foo\\bar.jl"}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "setBreakPoints", "params": {"path": "C:\\foo\\bar.jl", "lines": [1, 2, 3]}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "continue", "params": {}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "next", "params": {}}
@@ -50,29 +49,25 @@ export class herald  extends EventEmitter {
 		this.clt.write(data);
 	}
 	clearBreakpoints(path: string) {
-		var data = format.request(1, 'launch', [path]);
-		this.clt.write(data);
+
 	}
-	setBreakPoints(path: string, lines: number[]) {
-		var data = format.request(1, 'setBreakPoints', [path, lines]);
-		this.clt.write(data);
+	setBreakPoint(path: string, line: number) {
+
 	}
 	continue() {
-		var data = format.request(1, 'continue', []);
-		this.clt.write(data);
+
 	}
 	step() {
-		var data = format.request(1, 'step', []);
-		this.clt.write(data);
+
 	}
 
 	jsonparse(data: string) {
-		if(data.includes('method')) {	//event notifications
+		if(data.search('method')!=-1) {	//event notifications
 			var receive_data = parse(data);
 			var event = receive_data['method']
 			this.sendEvent(event)
 		}
-		else if(data.includes('result')) {
+		else if(data.search('result')!=-1) {
 			var receive_data = parse(data);
 			var result_data = receive_data['result'];
 			var response = 'response';
@@ -84,9 +79,9 @@ export class herald  extends EventEmitter {
 	}
 
 	private sendEvent(event: string, ... args: any[]) {
-		setImmediate(_ => {
-			this.emit(event, ...args);
-		});
+		this.clt.write(event);
 	}
 
 }
+
+var testherald = new herald();
