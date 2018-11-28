@@ -10,26 +10,26 @@ export class herald{
 	constructor() {
 		var net = require('net');
 		var self = this;
-		this.svr = net.createServer(function(connection) {
-			console.log('client connected');
-			connection.on('data', function(data) {
-				console.log('recieve data from client');
-				console.log(data.toString());
-				self.jsonparse(data.toString());
-			})
-			connection.on('end', function() {
-				console.log('客户端关闭连接');
-			});
-			//connection.write('Hello World!\r\n');
-			var data = self.jsonformatter(1, 'HELLO\r\n', [{"lines":[0]}])
-			console.log('writing... ');
-			console.log(data.toString());
-			connection.write(data);
-			connection.pipe(connection);
-		});
-		this.svr.listen(8000, function() {
-			console.log('server is listening');
-		});
+		// this.svr = net.createServer(function(connection) {
+		// 	console.log('client connected');
+		// 	connection.on('data', function(data) {
+		// 		console.log('recieve data from client');
+		// 		console.log(data.toString());
+		// 		self.jsonparse(data.toString());
+		// 	})
+		// 	connection.on('end', function() {
+		// 		console.log('客户端关闭连接');
+		// 	});
+		// 	//connection.write('Hello World!\r\n');
+		// 	var data = self.jsonformatter(1, 'HELLO\r\n', [{"lines":[0]}])
+		// 	console.log('writing... ');
+		// 	console.log(data.toString());
+		// 	connection.write(data);
+		// 	connection.pipe(connection);
+		// });
+		// this.svr.listen(8000, function() {
+		// 	console.log('server is listening');
+		// });
 
 		this.clt = net.connect({port: 8000}, function() {
 			console.log('连接到服务器！');
