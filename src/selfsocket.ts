@@ -39,18 +39,23 @@ export class herald  extends EventEmitter {
 	}
 	/*
 	Request Format:
+	00000112{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "launch", "params": {"stopOnEntry": stopOnEntry}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "clearBreakpoints", "params": {"path": "C:\\foo\\bar.jl"}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "setBreakPoints", "params": {"path": "C:\\foo\\bar.jl", "lines": [1, 2, 3]}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "continue", "params": {}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "next", "params": {}}
 	*/
+	initialize(program: string, stopOnEntry: boolean) {
+		var data = format.request(1, 'initialize', []);
+		this.clt.write(data);
+	}
 	start(program: string, stopOnEntry: boolean) {
 		var data = format.request(1, 'launch', [stopOnEntry]);
 		this.clt.write(data);
 	}
 	clearBreakpoints(path: string) {
-		var data = format.request(1, 'launch', [path]);
+		var data = format.request(1, 'clearBreakpoints', [path]);
 		this.clt.write(data);
 	}
 	setBreakPoints(path: string, lines: number[]) {
@@ -61,8 +66,8 @@ export class herald  extends EventEmitter {
 		var data = format.request(1, 'continue', []);
 		this.clt.write(data);
 	}
-	step() {
-		var data = format.request(1, 'step', []);
+	next() {
+		var data = format.request(1, 'next', []);
 		this.clt.write(data);
 	}
 
