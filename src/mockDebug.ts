@@ -42,6 +42,8 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	private _configurationDone = new Subject();
 
+	private _responseState: string;
+
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
 	 * We configure the default implementation of a debug adapter here.
@@ -52,10 +54,14 @@ export class MockDebugSession extends LoggingDebugSession {
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
 		this.setDebuggerColumnsStartAt1(false);
+		this._responseState = "none";
 
 		this._herald = new herald();
 
 		// setup event handlers
+		this._herald.on('initialize', () => {
+			this.sendEvent(new InitializedEvent());
+		});
 		this._herald.on('stopOnEntry', () => {
 			this.sendEvent(new StoppedEvent('entry', MockDebugSession.THREAD_ID));
 		});
@@ -87,8 +93,41 @@ export class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected processResponse(data) {
-		//TODO classify response
-		this.sendResponse(data);
+		//TODO more response types, and maybe result error handler
+		switch(this._responseState) {
+			case "initialize":
+				var response = new DebugProtocol.InitializeResponse();
+				response.body = response.body || {};
+				response.body.supportsConfigurationDoneRequest = true;
+				response.body.supportsEvaluateForHovers = true;
+				response.body.supportsStepBack = true;
+				this.sendResponse(response);
+				this._responseState = "none";
+				break;
+			case "lauch":
+				var response = new DebugProtocol.LaunchResponse();
+				this.sendResponse(response);
+				this._responseState = "none";
+				break;
+			case "setBreakPoints":
+				var response = new DebugProtocol.SetBreakpointsResponse();
+				this.sendResponse(response);
+				this._responseState = "none";
+				break;
+			case "continue":
+				var response = new DebugProtocol.ContinueResponse();
+				this.sendResponse(response);
+				this._responseState = "none";
+				break;
+			case "next":
+				var response = new DebugProtocol.NextResponse();
+				this.sendResponse(response);
+				this._responseState = "none";
+				break;
+			default:
+				//throw error: wrong response massage
+		}
+		
 	}
 
 	/**
@@ -112,12 +151,13 @@ export class MockDebugSession extends LoggingDebugSession {
 		// make VS Code to show a 'step back' button
 		response.body.supportsStepBack = true;
 
+		this._responseState = "initialize";
 		// this.sendResponse(response);
 
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
 		// we request them early by sending an 'initializeRequest' to the frontend.
 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
-		this.sendEvent(new InitializedEvent());
+		// this.sendEvent(new InitializedEvent());
 	}
 
 	/**
@@ -142,6 +182,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// start the program in the runtime
 		this._herald.start(args.program, !!args.stopOnEntry);
 
+		this._responseState = "lauch";
 		// this.sendResponse(response);
 	}
 
@@ -162,7 +203,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// });
 		this._herald.setBreakPoints(path, clientLines);
 
-
+		this._responseState = "setBreakPoints";
 		// send back the actual breakpoint positions
 		// response.body = {
 		// 	breakpoints: actualBreakpoints
@@ -206,6 +247,8 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			scopes: scopes
 		};
+
+		this._responseState = "scopes";
 		// this.sendResponse(response);
 	}
 
@@ -243,11 +286,15 @@ export class MockDebugSession extends LoggingDebugSession {
 		response.body = {
 			variables: variables
 		};
+
+		this._responseState = "variables";
 		// this.sendResponse(response);
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._herald.continue();
+
+		this._responseState = "continue";
 		// this.sendResponse(response);
 	}
 
@@ -263,6 +310,7 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._herald.step();
+		this._responseState = "next";
 		// this.sendResponse(response);
 	}
 
