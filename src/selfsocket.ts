@@ -82,6 +82,18 @@ export class herald  extends EventEmitter {
 			//throw error
 		}
 	}
+	jsonformatter(id: number, method: string, params: any){
+		var data = format.request(id, method, params);
+		var nlen = data.toString().length;
+		var len = nlen.toString();
+		var dlen = len.length;
+		//pad length to 8-bit
+		while(dlen < 8) {
+			len = "0" + len;
+			dlen++;
+		}
+		return len + data
+	}
 
 	private sendEvent(event: string, ... args: any[]) {
 		setImmediate(_ => {
