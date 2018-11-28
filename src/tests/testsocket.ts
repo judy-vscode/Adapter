@@ -103,7 +103,6 @@ export class herald{
 			//throw error
 		}
 	}
-
 	jsonformatter(id: number, method: string, params: any){
 		var data = format.request(id, method, params);
 		var nlen = data.toString().length;
