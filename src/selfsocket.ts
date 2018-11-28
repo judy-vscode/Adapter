@@ -67,12 +67,12 @@ export class herald  extends EventEmitter {
 	}
 
 	jsonparse(data: string) {
-		if(data.includes('method')) {	//event notifications
+		if(data.search('method')!=-1) {	//event notifications
 			var receive_data = parse(data);
 			var event = receive_data['method']
 			this.sendEvent(event)
 		}
-		else if(data.includes('result')) {
+		else if(data.search('result')!=-1) {
 			var receive_data = parse(data);
 			var result_data = receive_data['result'];
 			var response = 'response';
