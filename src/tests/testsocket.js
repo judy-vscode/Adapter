@@ -1,24 +1,27 @@
 "use strict";
 exports.__esModule = true;
 var json_rpc_protocol_1 = require("json-rpc-protocol");
+var net = require("net");
 var herald = /** @class */ (function () {
     function herald() {
-        var net = require('net');
+        var _this = this;
+        //var net = require('net');
         var self = this;
         this.svr = net.createServer(function (connection) {
             console.log('client connected');
-            connection.on('data', function (data) {
-                console.log('recieve data from client');
-                console.log(data.toString());
-                self.jsonparse(data.toString());
+            connection.on('data', function () {
+                self.svrdataProcess(data);
             });
+            // connection.on('data', function(data) {
+            // 	console.log('recieve data from client');
+            // 	console.log(data.toString());
+            // 	self.jsonparse(data.toString());
+            // })
             connection.on('end', function () {
                 console.log('客户端关闭连接');
             });
             //connection.write('Hello World!\r\n');
             var data = self.jsonformatter(1, 'HELLO\r\n', [{ "lines": [0] }]);
-            console.log('writing... ');
-            console.log(data.toString());
             connection.write(data);
             connection.pipe(connection);
         });
@@ -28,15 +31,11 @@ var herald = /** @class */ (function () {
         this.clt = net.connect({ port: 8000 }, function () {
             console.log('连接到服务器！');
         });
-        //this.clt.write("hello world!\r\n");
         var data = this.jsonformatter(1, 'hello\r\n', [{ "lines": [0] }]);
-        //console.log(data.toString());
         this.clt.write(data);
-        //this.clt.write(00000070{"id":1,"jsonrpc":"2.0","method":"test\r\n","params":[{"lines":[0]}]});
-        console.log(data);
-        this.clt.on('data', function (data) {
-            console.log('recieve data from server');
-            console.log(data.toString());
+        //TODO....
+        this.clt.on('data', function () {
+            _this.cltdataProcess(data);
         });
         this.clt.on('end', function () {
             console.log('断开与服务器的连接');
@@ -75,8 +74,19 @@ var herald = /** @class */ (function () {
     };
     herald.prototype.step = function () {
     };
+    herald.prototype.cltdataProcess = function (data) {
+        console.log('recieve data from server');
+        console.log(data.toString());
+        console.log(this.clt.bytesRead);
+    };
+    herald.prototype.svrdataProcess = function (data) {
+        console.log('recieve data from client');
+        console.log(data.toString());
+        console.log(this.clt.bytesRead);
+        this.jsonparse(data.toString());
+    };
     herald.prototype.jsonparse = function (data) {
-        var jsondata = data.slice(8);
+        var jsondata = data.slice(8); //length global var
         if (jsondata.search('method') != -1) { //event notifications
             var receive_data = json_rpc_protocol_1.parse(jsondata);
             var event = receive_data['method'];
