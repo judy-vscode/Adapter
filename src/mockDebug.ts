@@ -50,7 +50,9 @@ export class MockDebugSession extends LoggingDebugSession {
 	 */
 	public constructor() {
 		super("mock-debug.txt");
-
+		console.log("construct new MockDebugSession");
+		var exec = require('child_process').exec;
+		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl');
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
 		this.setDebuggerColumnsStartAt1(false);
@@ -90,44 +92,50 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.on('response', (data) => {
 			this.processResponse(data);
 		});
+		console.log("construct new MockDebugSession done");
 	}
 
 	protected processResponse(data) {
 		//TODO more response types, and maybe result error handler
 		switch(this._responseState) {
 			case "initialize":
-				var response = new DebugProtocol.InitializeResponse();
-				response.body = response.body || {};
-				response.body.supportsConfigurationDoneRequest = true;
-				response.body.supportsEvaluateForHovers = true;
-				response.body.supportsStepBack = true;
-				this.sendResponse(response);
-				this._responseState = "none";
+				(response: DebugProtocol.InitializeResponse) => {
+					response.body = response.body || {};
+					response.body.supportsConfigurationDoneRequest = true;
+					response.body.supportsEvaluateForHovers = true;
+					response.body.supportsStepBack = true;
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
 				break;
 			case "lauch":
-				var response = new DebugProtocol.LaunchResponse();
-				this.sendResponse(response);
-				this._responseState = "none";
+				(response: DebugProtocol.LaunchResponse) => {
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
 				break;
 			case "setBreakPoints":
-				var response = new DebugProtocol.SetBreakpointsResponse();
-				this.sendResponse(response);
-				this._responseState = "none";
+				(response: DebugProtocol.SetBreakpointsResponse) => {
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
 				break;
 			case "continue":
-				var response = new DebugProtocol.ContinueResponse();
-				this.sendResponse(response);
-				this._responseState = "none";
+				(response: DebugProtocol.ContinueResponse) => {
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
 				break;
 			case "next":
-				var response = new DebugProtocol.NextResponse();
-				this.sendResponse(response);
-				this._responseState = "none";
+				(response: DebugProtocol.NextResponse) => {
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
 				break;
 			default:
 				//throw error: wrong response massage
 		}
-		
+
 	}
 
 	/**
@@ -309,7 +317,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	// }
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
-		this._herald.step();
+		this._herald.next();
 		this._responseState = "next";
 		// this.sendResponse(response);
 	}
