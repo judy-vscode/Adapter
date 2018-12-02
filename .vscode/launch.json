@@ -23,6 +23,17 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "Judy",
+			"preLaunchTask": "npm",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "Server",
 			"cwd": "${workspaceFolder}",
 			"program": "${workspaceFolder}/src/debugAdapter.ts",
