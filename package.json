@@ -103,6 +103,7 @@
 						"name": "Ask for file name",
 						"program": "${workspaceFolder}/${command:AskForProgramName}",
 						"stopOnEntry": true
+
 					}
 				],
 				"configurationSnippets": [
@@ -114,7 +115,8 @@
 							"request": "launch",
 							"name": "Ask for file name",
 							"program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
-							"stopOnEntry": true
+							"stopOnEntry": true,
+							"debugServer": 4711
 						}
 					}
 				],

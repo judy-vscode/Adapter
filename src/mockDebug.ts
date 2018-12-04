@@ -13,6 +13,7 @@ import { basename } from 'path';
 import { MockRuntime, MockBreakpoint } from './mockRuntime';
 import { herald } from './selfsocket';
 const { Subject } = require('await-notify');
+import {parse, format} from 'json-rpc-protocol';
 
 
 /**
@@ -59,7 +60,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald = new herald();
 
 		// setup event handlers
-		this._herald.on('initialize', () => {
+		this._herald.on('initialized', () => {
 			console.log("receive initialize response");
 			this.sendEvent(new InitializedEvent());
 		});
@@ -95,6 +96,9 @@ export class MockDebugSession extends LoggingDebugSession {
 	}
 
 	protected processResponse(data) {
+		var jsondata = data.slice(8);
+		var receive_data = parse(jsondata);
+		var results = receive_data["results"];
 		//TODO more response types, and maybe result error handler
 		switch(this._responseState) {
 			case "initialize":
@@ -115,6 +119,16 @@ export class MockDebugSession extends LoggingDebugSession {
 				break;
 			case "setBreakPoints":
 				(response: DebugProtocol.SetBreakpointsResponse) => {
+					var actualBreakpoints = results.map(result => {
+						var id = result["id"];
+						var verified = result["verified"];
+						var line = result["line"];
+						var bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line))
+						bp.id = id;
+					});
+					response.body = {
+						breakpoints: actualBreakpoints
+					}
 					this.sendResponse(response);
 					this._responseState = "none";
 				}
@@ -131,6 +145,12 @@ export class MockDebugSession extends LoggingDebugSession {
 					this._responseState = "none";
 				}
 				break;
+			case "stackTrace":
+				(response: DebugProtocol.StackTraceResponse) => {
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
+				break
 			default:
 				//throw error: wrong response massage
 		}
@@ -146,19 +166,30 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
-		// build and return the capabilities of this debug adapter:
-		response.body = response.body || {};
+		var exec = require('child_process').exec;
+		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
+			console.log("stdout");
+			console.log(stdout);
+			console.log("stderr");
+			console.log(stderr);
+			console.log("stdin");
+			console.log(stdin);
+		});
 
-		// the adapter implements the configurationDoneRequest.
-		response.body.supportsConfigurationDoneRequest = true;
+		// // build and return the capabilities of this debug adapter:
+		// response.body = response.body || {};
 
-		// make VS Code to use 'evaluate' when hovering over source
-		response.body.supportsEvaluateForHovers = true;
+		// // the adapter implements the configurationDoneRequest.
+		// response.body.supportsConfigurationDoneRequest = true;
 
-		// make VS Code to show a 'step back' button
-		response.body.supportsStepBack = true;
+		// // make VS Code to use 'evaluate' when hovering over source
+		// response.body.supportsEvaluateForHovers = true;
+
+		// // make VS Code to show a 'step back' button
+		// response.body.supportsStepBack = true;
 
 		this._responseState = "initialize";
+		this._herald.initialize();
 		// this.sendResponse(response);
 
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
@@ -199,7 +230,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		var clientLines = args.lines || [];
 
 		// clear all breakpoints for this file
-		this._herald.clearBreakpoints(path);
+		// this._herald.clearBreakpoints(path);
 
 		// set and verify breakpoint locations
 		// const actualBreakpoints = clientLines.map(l => {
@@ -218,42 +249,44 @@ export class MockDebugSession extends LoggingDebugSession {
 		// this.sendResponse(response);
 	}
 
-	// protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 
-	// 	// runtime supports now threads so just return a default thread.
-	// 	response.body = {
-	// 		threads: [
-	// 			new Thread(MockDebugSession.THREAD_ID, "thread 1")
-	// 		]
-	// 	};
-	// 	this.sendResponse(response);
-	// }
+		// runtime supports now threads so just return a default thread.
+		response.body = {
+			threads: [
+				new Thread(MockDebugSession.THREAD_ID, "thread 1")
+			]
+		};
+		this.sendResponse(response);
+	}
 
-	// protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 
-	// 	const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
-	// 	const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
-	// 	const endFrame = startFrame + maxLevels;
+		const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+		const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+		const endFrame = startFrame + maxLevels;
 
-	// 	const stk = this._herald.stack(startFrame, endFrame);
+		const stk = this._herald.stack(startFrame, endFrame);
 
-	// 	response.body = {
-	// 		stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
-	// 		totalFrames: stk.count
-	// 	};
-	// 	this.sendResponse(response);
-	// }
+		// response.body = {
+		// 	stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
+		// 	totalFrames: stk.count
+		// };
+		// this.sendResponse(response);
+	}
 
 	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 
 		const frameReference = args.frameId;
-		const scopes = new Array<Scope>();
-		scopes.push(new Scope("Local", this._variableHandles.create("local_" + frameReference), false));
-		scopes.push(new Scope("Global", this._variableHandles.create("global_" + frameReference), true));
+		// const scopes = new Array<Scope>();
+		// scopes.push(new Scope("Local", this._variableHandles.create("local_" + frameReference), false));
+		// scopes.push(new Scope("Global", this._variableHandles.create("global_" + frameReference), true));
 
-		response.body = {
-			scopes: scopes
-		};
+		this._herald.scopes(frameReference);
+
+		// response.body = {
+		// 	scopes: scopes
+		// };
 
 		this._responseState = "scopes";
 		// this.sendResponse(response);
@@ -261,38 +294,39 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
 
-		const variables = new Array<DebugProtocol.Variable>();
-		const id = this._variableHandles.get(args.variablesReference);
-		if (id !== null) {
-			variables.push({
-				name: id + "_i",
-				type: "integer",
-				value: "123",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_f",
-				type: "float",
-				value: "3.14",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_s",
-				type: "string",
-				value: "hello world",
-				variablesReference: 0
-			});
-			variables.push({
-				name: id + "_o",
-				type: "object",
-				value: "Object",
-				variablesReference: this._variableHandles.create("object_")
-			});
-		}
-
-		response.body = {
-			variables: variables
-		};
+		// const variables = new Array<DebugProtocol.Variable>();
+		// const id = this._variableHandles.get(args.variablesReference);
+		// if (id !== null) {
+		// 	variables.push({
+		// 		name: id + "_i",
+		// 		type: "integer",
+		// 		value: "123",
+		// 		variablesReference: 0
+		// 	});
+		// 	variables.push({
+		// 		name: id + "_f",
+		// 		type: "float",
+		// 		value: "3.14",
+		// 		variablesReference: 0
+		// 	});
+		// 	variables.push({
+		// 		name: id + "_s",
+		// 		type: "string",
+		// 		value: "hello world",
+		// 		variablesReference: 0
+		// 	});
+		// 	variables.push({
+		// 		name: id + "_o",
+		// 		type: "object",
+		// 		value: "Object",
+		// 		variablesReference: this._variableHandles.create("object_")
+		// 	});
+		// }
+		var variablesReference = args.variablesReference;
+		this._herald.variables(variablesReference);
+		// response.body = {
+		// 	variables: variables
+		// };
 
 		this._responseState = "variables";
 		// this.sendResponse(response);

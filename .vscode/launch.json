@@ -39,7 +39,7 @@
 			"program": "${workspaceFolder}/src/debugAdapter.ts",
 			"args": [ "--server=4711" ],
 			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
-			"stopOnEntry": true
+			"stopOnEntry": false
 		},
 		{
 			"type": "node",

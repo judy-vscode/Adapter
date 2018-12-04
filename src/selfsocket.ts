@@ -5,16 +5,6 @@ import { SSL_OP_EPHEMERAL_RSA } from "constants";
 import * as net from 'net'
 import { PassThrough } from "stream";
 
-var exec = require('child_process').exec;
-		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
-			console.log("stdout");
-			console.log(stdout);
-			console.log("stderr");
-			console.log(stderr);
-			console.log("stdin");
-			console.log(stdin);
-		});
-
 export class herald  extends EventEmitter {
 	private rl;
 	private svr;
@@ -24,7 +14,7 @@ export class herald  extends EventEmitter {
 
 	constructor() {
 		super();
-
+		this.dataBuffer = "";
 		var self = this;
 		this.svr = net.createServer(function(connection) {
 			console.log('client connected');
@@ -64,29 +54,41 @@ export class herald  extends EventEmitter {
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "continue", "params": {}}
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "next", "params": {}}
 	*/
-	initialize(program: string, stopOnEntry: boolean) {
+	initialize() {
 		console.log("send initialize request");
-		var data = format.request(1, 'initialize', []);
+		var data = this.jsonformatter(1, 'initialize', {});
 		this.clt.write(data);
 	}
 	start(program: string, stopOnEntry: boolean) {
-		var data = format.request(1, 'launch', [stopOnEntry]);
+		var data = this.jsonformatter(1, 'launch', {stopOnEntry});
 		this.clt.write(data);
 	}
 	clearBreakpoints(path: string) {
-		var data = format.request(1, 'clearBreakpoints', [path]);
+		var data = this.jsonformatter(1, 'clearBreakpoints', {path});
 		this.clt.write(data);
 	}
 	setBreakPoints(path: string, lines: number[]) {
-		var data = format.request(1, 'setBreakPoints', [path, lines]);
+		var data = this.jsonformatter(1, 'setBreakPoints', {path, lines});
 		this.clt.write(data);
 	}
 	continue() {
-		var data = format.request(1, 'continue', []);
+		var data = this.jsonformatter(1, 'continue', {});
 		this.clt.write(data);
 	}
 	next() {
-		var data = format.request(1, 'next', []);
+		var data = this.jsonformatter(1, 'next', {});
+		this.clt.write(data);
+	}
+	stack(startFrame, endFrame) {
+		var data = this.jsonformatter(1, 'stackTrace', {});
+		this.clt.write(data);
+	}
+	scopes(frameReference) {
+		var data = this.jsonformatter(1, 'scopes', {frameReference});
+		this.clt.write(data);
+	}
+	variables(variablesReference) {
+		var data = this.jsonformatter(1, 'variables', {variablesReference});
 		this.clt.write(data);
 	}
 
@@ -103,21 +105,21 @@ export class herald  extends EventEmitter {
 
 		this.dataBuffer += dataString;
 		if(this.packLength == 0) {
-			this.packLength = parseInt(this.dataBuffer.slice(0,8), 10);
-			this.dataBuffer = this.dataBuffer.slice(8);
+			this.packLength = parseInt(this.dataBuffer.slice(0,8), 10) + 8;
+			// this.dataBuffer = this.dataBuffer;
 		}
 		var bufferSize = this.dataBuffer.length;
 		if(this.packLength <= bufferSize) {
 			this.jsonparse(this.dataBuffer.slice(0, this.packLength));
-			this.dataBuffer.slice(this.packLength);
+			this.dataBuffer = this.dataBuffer.slice(this.packLength);
 			this.packLength = 0;
 		}
 	}
 	jsonparse(data: string) {
-		var jsondata = data.slice(8)//length global var
+		var jsondata = data.slice(8);//length global var
 		if(jsondata.search('method')!=-1) {	//event notifications
 			var receive_data = parse(jsondata);
-			var event = receive_data['method']
+			var event = receive_data['params']['method']
 			this.sendEvent(event);
 		}
 		else if(jsondata.search('result')!=-1) {
