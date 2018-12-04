@@ -125,6 +125,7 @@ export class MockDebugSession extends LoggingDebugSession {
 						var line = result["line"];
 						var bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line))
 						bp.id = id;
+						return bp;
 					});
 					response.body = {
 						breakpoints: actualBreakpoints
@@ -147,10 +148,49 @@ export class MockDebugSession extends LoggingDebugSession {
 				break;
 			case "stackTrace":
 				(response: DebugProtocol.StackTraceResponse) => {
+					var actualStackFrames = results.map(result => {
+						var stk = new StackFrame(result["frameId"], result["name"], this.createSource(result["path"]), this.convertDebuggerLineToClient(result["line"]));
+						return stk;
+					})
+					response.body = {
+						stackFrames: actualStackFrames,
+						totalFrames: results.length
+					};
 					this.sendResponse(response);
 					this._responseState = "none";
 				}
 				break
+			case "scopes":
+				(response: DebugProtocol.ScopesResponse) => {
+					var scopes = results.map(result => {
+						var scp = new Scope(result["name"], this._variableHandles.create(result["variablesReference"]), result["expensive"]);
+						return scp;
+					})
+					response.body = {
+						scopes: scopes
+					};
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
+				break;
+			case "variables":
+				(response: DebugProtocol.VariablesResponse) => {
+					const variables = new Array<DebugProtocol.Variable>();
+					results.forEach(result => {
+						variables.push({
+							name: result["name"],
+							type: result["type"],
+							value: result["value"],
+							variablesReference: result["variablesReference"]
+						})
+					});
+					response.body = {
+						variables: variables
+					};
+					this.sendResponse(response);
+					this._responseState = "none";
+				}
+				break;
 			default:
 				//throw error: wrong response massage
 		}
