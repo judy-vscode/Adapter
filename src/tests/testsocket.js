@@ -26,7 +26,7 @@ var herald = /** @class */ (function () {
             connection.write(svrdata);
             connection.pipe(connection);
         });
-        this.svr.listen(18001, function () {
+        this.svr.listen(8000, function () {
             console.log('server is listening');
         });
         this.clt = net.connect({ port: 8000 }, function () {

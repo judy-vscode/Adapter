@@ -5,6 +5,16 @@ import { SSL_OP_EPHEMERAL_RSA } from "constants";
 import * as net from 'net'
 import { PassThrough } from "stream";
 
+var exec = require('child_process').exec;
+		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
+			console.log("stdout");
+			console.log(stdout);
+			console.log("stderr");
+			console.log(stderr);
+			console.log("stdin");
+			console.log(stdin);
+		});
+
 export class herald  extends EventEmitter {
 	private rl;
 	private svr;
@@ -14,10 +24,12 @@ export class herald  extends EventEmitter {
 
 	constructor() {
 		super();
+
 		var self = this;
 		this.svr = net.createServer(function(connection) {
 			console.log('client connected');
 			connection.on('data', (data) => {
+				console.log(data);
 				self.svrdataProcess(data);
 			})
 			connection.on('end', function() {
@@ -53,6 +65,7 @@ export class herald  extends EventEmitter {
 	00000112{"jsonrpc": "2.0", "id": 1, "method": "next", "params": {}}
 	*/
 	initialize(program: string, stopOnEntry: boolean) {
+		console.log("send initialize request");
 		var data = format.request(1, 'initialize', []);
 		this.clt.write(data);
 	}

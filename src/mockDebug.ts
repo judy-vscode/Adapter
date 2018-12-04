@@ -51,8 +51,6 @@ export class MockDebugSession extends LoggingDebugSession {
 	public constructor() {
 		super("mock-debug.txt");
 		console.log("construct new MockDebugSession");
-		var exec = require('child_process').exec;
-		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl');
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
 		this.setDebuggerColumnsStartAt1(false);
@@ -62,6 +60,7 @@ export class MockDebugSession extends LoggingDebugSession {
 
 		// setup event handlers
 		this._herald.on('initialize', () => {
+			console.log("receive initialize response");
 			this.sendEvent(new InitializedEvent());
 		});
 		this._herald.on('stopOnEntry', () => {
