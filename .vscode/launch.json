@@ -18,7 +18,8 @@
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}"
 			],
-			"outFiles": [ "${workspaceFolder}/out/**/*.js" ]
+			"outFiles": [ "${workspaceFolder}/out/**/*.js" ],
+			"stopOnEntry": false
 		},
 		{
 			"type": "node",
@@ -61,7 +62,7 @@
 			"request": "launch",
 			"name": "Mock Sample",
 			"program": "${workspaceFolder}/${command:AskForProgramName}",
-			"stopOnEntry": true
+			"stopOnEntry": false
 		}
 	],
 	"compounds": [

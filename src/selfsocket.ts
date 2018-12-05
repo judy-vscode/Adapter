@@ -57,38 +57,56 @@ export class herald  extends EventEmitter {
 	initialize() {
 		console.log("send initialize request");
 		var data = this.jsonformatter(1, 'initialize', {});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	start(program: string, stopOnEntry: boolean) {
-		var data = this.jsonformatter(1, 'launch', {stopOnEntry});
+		var data = this.jsonformatter(1, 'launch', {});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	clearBreakpoints(path: string) {
 		var data = this.jsonformatter(1, 'clearBreakpoints', {path});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	setBreakPoints(path: string, lines: number[]) {
 		var data = this.jsonformatter(1, 'setBreakPoints', {path, lines});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	continue() {
 		var data = this.jsonformatter(1, 'continue', {});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	next() {
 		var data = this.jsonformatter(1, 'next', {});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	stack(startFrame, endFrame) {
 		var data = this.jsonformatter(1, 'stackTrace', {});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
-	scopes(frameReference) {
-		var data = this.jsonformatter(1, 'scopes', {frameReference});
+	scopes(frameId) {
+		var data = this.jsonformatter(1, 'scopes', {frameId});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 	variables(variablesReference) {
 		var data = this.jsonformatter(1, 'variables', {variablesReference});
+		console.log("writing to debugger...");
+		console.log(data.toString());
 		this.clt.write(data);
 	}
 
@@ -104,29 +122,35 @@ export class herald  extends EventEmitter {
 		var dataString = data.toString();
 
 		this.dataBuffer += dataString;
-		if(this.packLength == 0) {
-			this.packLength = parseInt(this.dataBuffer.slice(0,8), 10) + 8;
-			// this.dataBuffer = this.dataBuffer;
-		}
-		var bufferSize = this.dataBuffer.length;
-		if(this.packLength <= bufferSize) {
-			this.jsonparse(this.dataBuffer.slice(0, this.packLength));
-			this.dataBuffer = this.dataBuffer.slice(this.packLength);
-			this.packLength = 0;
+		while(this.dataBuffer.length != 0) {
+			if(this.packLength == 0) {
+				this.packLength = parseInt(this.dataBuffer.slice(0,8), 10) + 8;
+				// this.dataBuffer = this.dataBuffer;
+			}
+			var bufferSize = this.dataBuffer.length;
+			if(this.packLength <= bufferSize) {
+				this.jsonparse(this.dataBuffer.slice(0, this.packLength));
+				this.dataBuffer = this.dataBuffer.slice(this.packLength);
+				this.packLength = 0;
+			}
+			else {
+				break;
+			}
 		}
 	}
 	jsonparse(data: string) {
 		var jsondata = data.slice(8);//length global var
 		if(jsondata.search('method')!=-1) {	//event notifications
 			var receive_data = parse(jsondata);
-			var event = receive_data['params']['method']
-			this.sendEvent(event);
+			var event = receive_data['method']
+			var result_data = receive_data['params'];
+			this.sendEvent(event, result_data);
 		}
 		else if(jsondata.search('result')!=-1) {
 			var receive_data = parse(jsondata);
-			var result_data = receive_data['result'];
+			var data = receive_data['result'];
 			var response = 'response';
-			this.sendEvent(response, result_data);
+			this.sendEvent(response, data);
 		}
 		else {
 			//throw error

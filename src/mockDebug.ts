@@ -10,10 +10,11 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { basename } from 'path';
-import { MockRuntime, MockBreakpoint } from './mockRuntime';
+// import { MockRuntime, MockBreakpoint } from './mockRuntime';
 import { herald } from './selfsocket';
 const { Subject } = require('await-notify');
 import {parse, format} from 'json-rpc-protocol';
+import { response } from 'json-rpc-protocol/dist/format';
 
 
 /**
@@ -43,7 +44,9 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	private _configurationDone = new Subject();
 
-	private _responseState: string;
+	private _responseState = new Array();
+
+	private _responseInterface;
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -55,7 +58,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// this debugger uses zero-based lines and columns
 		this.setDebuggerLinesStartAt1(false);
 		this.setDebuggerColumnsStartAt1(false);
-		this._responseState = "none";
+		// this._responseState = "none";
 
 		this._herald = new herald();
 
@@ -64,20 +67,8 @@ export class MockDebugSession extends LoggingDebugSession {
 			console.log("receive initialize response");
 			this.sendEvent(new InitializedEvent());
 		});
-		this._herald.on('stopOnEntry', () => {
-			this.sendEvent(new StoppedEvent('entry', MockDebugSession.THREAD_ID));
-		});
-		this._herald.on('stopOnStep', () => {
-			this.sendEvent(new StoppedEvent('step', MockDebugSession.THREAD_ID));
-		});
-		this._herald.on('stopOnBreakpoint', () => {
-			this.sendEvent(new StoppedEvent('breakpoint', MockDebugSession.THREAD_ID));
-		});
-		this._herald.on('stopOnException', () => {
-			this.sendEvent(new StoppedEvent('exception', MockDebugSession.THREAD_ID));
-		});
-		this._herald.on('breakpointValidated', (bp: MockBreakpoint) => {
-			this.sendEvent(new BreakpointEvent('changed', <DebugProtocol.Breakpoint>{ verified: bp.verified, id: bp.id }));
+		this._herald.on('stopped', (data) => {
+			this.sendEvent(new StoppedEvent(data["reason"], MockDebugSession.THREAD_ID));
 		});
 		this._herald.on('output', (text, filePath, line, column) => {
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`);
@@ -86,70 +77,76 @@ export class MockDebugSession extends LoggingDebugSession {
 			e.body.column = this.convertDebuggerColumnToClient(column);
 			this.sendEvent(e);
 		});
-		this._herald.on('end', () => {
+		this._herald.on('exited', () => {
 			this.sendEvent(new TerminatedEvent());
 		});
-		this._herald.on('response', (data) => {
-			this.processResponse(data);
+		this._herald.on('response', (result_data) => {
+			this.processResponse(result_data);
 		});
 		console.log("construct new MockDebugSession done");
 	}
 
-	protected processResponse(data) {
-		var jsondata = data.slice(8);
-		var receive_data = parse(jsondata);
-		var results = receive_data["results"];
+	protected processResponse(results) {
 		//TODO more response types, and maybe result error handler
-		switch(this._responseState) {
+		var array: Array<any>;
+		if(results.length>1)
+			array = results;
+		else
+			array = new Array(results);
+		// console.log(this._responseState)
+		// console.log(array);
+		debugger;
+		if(this._responseState.length == 0) {
+			return;
+		}
+		switch(this._responseState.pop()) {
 			case "initialize":
-				(response: DebugProtocol.InitializeResponse) => {
+				((response: DebugProtocol.InitializeResponse) => {
 					response.body = response.body || {};
 					response.body.supportsConfigurationDoneRequest = true;
-					response.body.supportsEvaluateForHovers = true;
-					response.body.supportsStepBack = true;
+					response.body.supportsEvaluateForHovers = false;
+					response.body.supportsStepBack = false;
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface);
 				break;
-			case "lauch":
-				(response: DebugProtocol.LaunchResponse) => {
+			case "launch":
+				((response: DebugProtocol.LaunchResponse) => {
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface);
 				break;
 			case "setBreakPoints":
-				(response: DebugProtocol.SetBreakpointsResponse) => {
-					var actualBreakpoints = results.map(result => {
-						var id = result["id"];
-						var verified = result["verified"];
-						var line = result["line"];
-						var bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line))
+				((response: DebugProtocol.SetBreakpointsResponse, results: Array<any>) => {
+					const actualBreakpoints = array.map(result => {
+						const id = result["id"];
+						const verified = result["verified"];
+						const line = result["line"];
+						const bp = <DebugProtocol.Breakpoint> new Breakpoint(verified, this.convertDebuggerLineToClient(line))
 						bp.id = id;
 						return bp;
 					});
+					// debugger;
+					// console.log(actualBreakpoints.length);
+					// console.log(actualBreakpoints[0].id);
 					response.body = {
 						breakpoints: actualBreakpoints
 					}
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface, results);
 				break;
 			case "continue":
-				(response: DebugProtocol.ContinueResponse) => {
+				((response: DebugProtocol.ContinueResponse) => {
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface);
 				break;
 			case "next":
-				(response: DebugProtocol.NextResponse) => {
+				((response: DebugProtocol.NextResponse) => {
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface);
 				break;
 			case "stackTrace":
-				(response: DebugProtocol.StackTraceResponse) => {
-					var actualStackFrames = results.map(result => {
-						var stk = new StackFrame(result["frameId"], result["name"], this.createSource(result["path"]), this.convertDebuggerLineToClient(result["line"]));
+				((response: DebugProtocol.StackTraceResponse, results) => {
+					const actualStackFrames = array.map(result => {
+						const stk = new StackFrame(result["frameId"], result["name"], this.createSource(result["path"]), this.convertDebuggerLineToClient(result["line"]));
 						return stk;
 					})
 					response.body = {
@@ -157,26 +154,24 @@ export class MockDebugSession extends LoggingDebugSession {
 						totalFrames: results.length
 					};
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface, array);
 				break
 			case "scopes":
-				(response: DebugProtocol.ScopesResponse) => {
-					var scopes = results.map(result => {
-						var scp = new Scope(result["name"], this._variableHandles.create(result["variablesReference"]), result["expensive"]);
+				((response: DebugProtocol.ScopesResponse, results) => {
+					const scopes = array.map(result => {
+						const scp = new Scope(result["name"], this._variableHandles.create(result["variablesReference"]), result["expensive"]);
 						return scp;
 					})
 					response.body = {
 						scopes: scopes
 					};
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface, array);
 				break;
 			case "variables":
-				(response: DebugProtocol.VariablesResponse) => {
+				((response: DebugProtocol.VariablesResponse, results) => {
 					const variables = new Array<DebugProtocol.Variable>();
-					results.forEach(result => {
+					array.forEach(result => {
 						variables.push({
 							name: result["name"],
 							type: result["type"],
@@ -188,8 +183,7 @@ export class MockDebugSession extends LoggingDebugSession {
 						variables: variables
 					};
 					this.sendResponse(response);
-					this._responseState = "none";
-				}
+				})(this._responseInterface, array);
 				break;
 			default:
 				//throw error: wrong response massage
@@ -207,7 +201,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
 		var exec = require('child_process').exec;
-		exec('julia D:/judy-master/judy.jl D:/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
+		exec('julia D:/judy-ast/judy.jl D:/judy-ast/test/test1.jl', function(stdin, stdout, stderr) {
 			console.log("stdout");
 			console.log(stdout);
 			console.log("stderr");
@@ -228,8 +222,9 @@ export class MockDebugSession extends LoggingDebugSession {
 		// // make VS Code to show a 'step back' button
 		// response.body.supportsStepBack = true;
 
-		this._responseState = "initialize";
 		this._herald.initialize();
+		this._responseState.push("initialize");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
@@ -260,7 +255,8 @@ export class MockDebugSession extends LoggingDebugSession {
 		// start the program in the runtime
 		this._herald.start(args.program, !!args.stopOnEntry);
 
-		this._responseState = "lauch";
+		this._responseState.push("launch");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 	}
 
@@ -279,9 +275,11 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	bp.id= id;
 		// 	return bp;
 		// });
-		this._herald.setBreakPoints(path, clientLines);
+		var lines = clientLines.map(l => this.convertClientLineToDebugger(l));
+		this._herald.setBreakPoints(path, lines);
 
-		this._responseState = "setBreakPoints";
+		this._responseState.push("setBreakPoints");
+		this._responseInterface = response;
 		// send back the actual breakpoint positions
 		// response.body = {
 		// 	breakpoints: actualBreakpoints
@@ -297,6 +295,9 @@ export class MockDebugSession extends LoggingDebugSession {
 				new Thread(MockDebugSession.THREAD_ID, "thread 1")
 			]
 		};
+		// this._responseState = "threads";
+		// this._responseInterface = response;
+
 		this.sendResponse(response);
 	}
 
@@ -307,6 +308,10 @@ export class MockDebugSession extends LoggingDebugSession {
 		const endFrame = startFrame + maxLevels;
 
 		const stk = this._herald.stack(startFrame, endFrame);
+
+		this._responseState.push("stackTrace");
+		this._responseInterface = response;
+
 
 		// response.body = {
 		// 	stackFrames: stk.frames.map(f => new StackFrame(f.index, f.name, this.createSource(f.file), this.convertDebuggerLineToClient(f.line))),
@@ -328,7 +333,8 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	scopes: scopes
 		// };
 
-		this._responseState = "scopes";
+		this._responseState.push("scopes");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 	}
 
@@ -368,14 +374,16 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	variables: variables
 		// };
 
-		this._responseState = "variables";
+		this._responseState.push("variables");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 	}
 
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._herald.continue();
 
-		this._responseState = "continue";
+		this._responseState.push("continue");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 	}
 
@@ -391,7 +399,8 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._herald.next();
-		this._responseState = "next";
+		this._responseState.push("next");
+		this._responseInterface = response;
 		// this.sendResponse(response);
 	}
 
