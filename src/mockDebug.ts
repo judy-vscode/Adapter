@@ -56,8 +56,8 @@ export class MockDebugSession extends LoggingDebugSession {
 		super("mock-debug.txt");
 		console.log("construct new MockDebugSession");
 		// this debugger uses zero-based lines and columns
-		this.setDebuggerLinesStartAt1(false);
-		this.setDebuggerColumnsStartAt1(false);
+		this.setDebuggerLinesStartAt1(true);
+		this.setDebuggerColumnsStartAt1(true);
 		// this._responseState = "none";
 
 		this._herald = new herald();
@@ -95,7 +95,7 @@ export class MockDebugSession extends LoggingDebugSession {
 			array = new Array(results);
 		// console.log(this._responseState)
 		// console.log(array);
-		debugger;
+		// debugger;
 		if(this._responseState.length == 0) {
 			return;
 		}
@@ -276,6 +276,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	return bp;
 		// });
 		var lines = clientLines.map(l => this.convertClientLineToDebugger(l));
+		// var lines = clientLines.map(l => l);
 		this._herald.setBreakPoints(path, lines);
 
 		this._responseState.push("setBreakPoints");
