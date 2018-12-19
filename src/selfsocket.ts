@@ -18,6 +18,7 @@ export class herald  extends EventEmitter {
 		var self = this;
 		this.svr = net.createServer(function(connection) {
 			console.log('client connected');
+
 			connection.on('data', (data) => {
 				console.log(data);
 				self.svrdataProcess(data);
@@ -32,18 +33,38 @@ export class herald  extends EventEmitter {
 		this.svr.listen(18001, function() {
 			console.log('server is listening');
 		});
+		var exec = require('child_process').exec;
+		exec('judy-ast/judy.jl judy-ast/test/test1.jl', function(stdin, stdout, stderr) {
+			console.log("stdout");
+			console.log(stdout);
+			console.log("stderr");
+			console.log(stderr);
+			console.log("stdin");
+			console.log(stdin);
+		});
+		// set time out DO NOT DELETE!!!
+		// wait until debugger open socket
+		var now = new Date();
+        var exitTime = now.getTime() + 1000;
+        while (true) {
+            now = new Date();
+            if (now.getTime() > exitTime)
+            break;
+		}
 
-		this.clt = net.connect({port: 8000}, function() {
+		self.clt = net.connect({port: 8000}, function() {
 			console.log('连接到服务器！');
 		 });
 		//  var cltdata = this.jsonformatter(1, 'hello\r\n', [{"lines":[0]}])
 		//  this.clt.write(cltdata);
-		this.clt.on('data', (data) => {
-			this. cltdataProcess(data);
+		self.clt.on('data', (data) => {
+			self. cltdataProcess(data);
 		})
-		this.clt.on('end', function() {
+		self.clt.on('end', function() {
 			console.log('断开与服务器的连接');
 		});
+
+
 	}
 	/*
 	Request Format:

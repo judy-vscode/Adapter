@@ -1,12 +1,12 @@
 {
-	"name": "mock-debug",
-	"displayName": "Mock Debug",
-	"version": "0.28.0",
-	"publisher": "andreweinand",
-	"description": "Starter extension for developing debug adapters for VS Code.",
+	"name": "julia-debug",
+	"displayName": "Judy",
+	"version": "0.0.1",
+	"publisher": "Judy-team",
+	"description": "A debugger for Julia Programming Language",
 	"author": {
 		"name": "Microsoft Corporation",
-		"email": "aweinand@microsoft.com"
+		"email": "v-manlsh@microsoft.com"
 	},
 	"license": "MIT",
 	"keywords": [
@@ -16,17 +16,17 @@
 		"vscode": "^1.29.0",
 		"node": "^8.9.3"
 	},
-	"icon": "images/mock-debug-icon.png",
+	"icon": "images/brad.jpg",
 	"categories": [
 		"Debuggers"
 	],
 	"private": true,
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Microsoft/vscode-mock-debug.git"
+		"url": "https://github.com/judy-vscode/Judy.git"
 	},
 	"bugs": {
-		"url": "https://github.com/Microsoft/vscode-mock-debug/issues"
+		"url": "https://github.com/judy-vscode/Judy/issues"
 	},
 	"scripts": {
 		"prepublish": "tsc -p ./src",
@@ -58,7 +58,7 @@
 	"main": "./out/extension",
 	"activationEvents": [
 		"onDebug",
-		"onCommand:extension.mock-debug.getProgramName"
+		"onCommand:extension.julia-debug.getProgramName"
 	],
 	"contributes": {
 		"breakpoints": [
@@ -68,8 +68,8 @@
 		],
 		"debuggers": [
 			{
-				"type": "mock",
-				"label": "Mock Debug",
+				"type": "judy",
+				"label": "Judy",
 				"program": "./out/debugAdapter.js",
 				"runtime": "node",
 				"configurationAttributes": {
@@ -101,27 +101,26 @@
 						"type": "node",
 						"request": "launch",
 						"name": "Ask for file name",
-						"program": "${workspaceFolder}/${command:AskForProgramName}",
+						"program": "${workspaceFolder}/test/test1.jl",
 						"stopOnEntry": true
 
 					}
 				],
 				"configurationSnippets": [
 					{
-						"label": "Mock Debug: Launch",
-						"description": "A new configuration for 'debugging' a user selected markdown file.",
+						"label": "Judy: Launch",
+						"description": "A new configuration for 'debugging' a user selected julia file.",
 						"body": {
-							"type": "mock",
+							"type": "judy",
 							"request": "launch",
 							"name": "Ask for file name",
 							"program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
-							"stopOnEntry": true,
-							"debugServer": 4711
+							"stopOnEntry": true
 						}
 					}
 				],
 				"variables": {
-					"AskForProgramName": "extension.mock-debug.getProgramName"
+					"AskForProgramName": "extension.julia-debug.getProgramName"
 				}
 			}
 		]

@@ -58,9 +58,9 @@
 			"internalConsoleOptions": "openOnSessionStart"
 		},
 		{
-			"type": "mock",
+			"type": "judy",
 			"request": "launch",
-			"name": "Mock Sample",
+			"name": "Judy Sample",
 			"program": "${workspaceFolder}/${command:AskForProgramName}",
 			"stopOnEntry": false
 		}
