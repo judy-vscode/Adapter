@@ -19,7 +19,7 @@ Or discuss debug adapters on Gitter:
 
 You can now 'step through' the `test.jl` file, set and hit breakpoints, and run into exceptions (if the word exception appears in a line).
 
-![Judy](images/judy.gif)
+![Judy](https://raw.githubusercontent.com/judy-vscode/Adapter/develop/images/judy.gif)
 
 ## Build and Run
 
