@@ -34,7 +34,7 @@ export class herald  extends EventEmitter {
 			console.log('server is listening');
 		});
 		var exec = require('child_process').exec;
-		exec('judy-ast/judy.jl judy-ast/test/test1.jl', function(stdin, stdout, stderr) {
+		exec('julia judy-ast/judy.jl', function(stdin, stdout, stderr) {
 			console.log("stdout");
 			console.log(stdout);
 			console.log("stderr");
@@ -83,7 +83,7 @@ export class herald  extends EventEmitter {
 		this.clt.write(data);
 	}
 	start(program: string, stopOnEntry: boolean) {
-		var data = this.jsonformatter(1, 'launch', {});
+		var data = this.jsonformatter(1, 'launch', {program});
 		console.log("writing to debugger...");
 		console.log(data.toString());
 		this.clt.write(data);

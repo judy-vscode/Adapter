@@ -9,8 +9,7 @@
             "request": "launch",
             "name": "Ask for file name",
             "program": "${workspaceFolder}/test/test1.jl",
-            "stopOnEntry": false,
-            "debugServer": 4711
+            "stopOnEntry": false
         }
     ]
 }
