@@ -2,7 +2,8 @@ import { Server } from "http";
 import {parse, format} from 'json-rpc-protocol';
 import { EventEmitter } from 'events';
 import { SSL_OP_EPHEMERAL_RSA } from "constants";
-import * as net from 'net'
+import * as net from 'net';
+import * as vscode from 'vscode';
 import { PassThrough } from "stream";
 
 export class herald  extends EventEmitter {
@@ -34,7 +35,7 @@ export class herald  extends EventEmitter {
 			console.log('server is listening');
 		});
 		var exec = require('child_process').exec;
-		exec('julia judy-ast/judy.jl', function(stdin, stdout, stderr) {
+		exec('julia D:\\Judy_nightly_build/judy-vscode/judy-master/judy.jl', function(stdin, stdout, stderr) {
 			console.log("stdout");
 			console.log(stdout);
 			console.log("stderr");
@@ -139,6 +140,7 @@ export class herald  extends EventEmitter {
 	svrdataProcess(data) {
 		console.log('recieve data from client');
 		console.log(data.toString());
+		// vscode.window.showInformationMessage(data.toString());
 		//console.log(this.clt.bytesRead);
 		var dataString = data.toString();
 

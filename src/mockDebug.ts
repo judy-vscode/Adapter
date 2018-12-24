@@ -81,7 +81,12 @@ export class MockDebugSession extends LoggingDebugSession {
 			this.sendEvent(new TerminatedEvent());
 		});
 		this._herald.on('response', (result_data) => {
-			this.processResponse(result_data);
+			try {
+				this.processResponse(result_data);
+			}
+			finally {
+
+			}
 		});
 		console.log("construct new MockDebugSession done");
 	}

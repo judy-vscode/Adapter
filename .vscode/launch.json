@@ -69,6 +69,10 @@
 		{
 			"name": "Extension + Server",
 			"configurations": [ "Extension", "Server" ]
+		},
+		{
+			"name": "Judy Sample + Server",
+			"configurations": [ "Judy Sample", "Server" ]
 		}
 	]
 }

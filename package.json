@@ -1,8 +1,8 @@
 {
 	"name": "julia-debug",
 	"displayName": "Judy",
-	"version": "0.0.1",
-	"publisher": "Judy-team",
+	"version": "0.0.17",
+	"publisher": "JudyTeam",
 	"description": "A debugger for Julia Programming Language",
 	"author": {
 		"name": "Microsoft Corporation",
@@ -16,7 +16,7 @@
 		"vscode": "^1.29.0",
 		"node": "^8.9.3"
 	},
-	"icon": "images/brad.jpg",
+	"icon": "images/chaoyue.jpg",
 	"categories": [
 		"Debuggers"
 	],
@@ -86,7 +86,7 @@
 							"stopOnEntry": {
 								"type": "boolean",
 								"description": "Automatically stop after launch.",
-								"default": true
+								"default": false
 							},
 							"trace": {
 								"type": "boolean",
@@ -101,8 +101,8 @@
 						"type": "node",
 						"request": "launch",
 						"name": "Ask for file name",
-						"program": "${workspaceFolder}/test/test1.jl",
-						"stopOnEntry": true
+						"program": "${workspaceFolder}/${command:AskForProgramName}",
+						"stopOnEntry": false
 
 					}
 				],
@@ -115,7 +115,8 @@
 							"request": "launch",
 							"name": "Ask for file name",
 							"program": "^\"\\${workspaceFolder}/\\${command:AskForProgramName}\"",
-							"stopOnEntry": true
+							"stopOnEntry": false,
+							"debugServer": 4711
 						}
 					}
 				],
