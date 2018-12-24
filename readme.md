@@ -15,9 +15,9 @@ Or discuss debug adapters on Gitter:
 * Create a new 'program' file `test.jl` and enter several lines of julia codes.
 * Switch to the debug viewlet and press the gear dropdown.
 * Select the debug environment "Judy".
-* Press the green 'play' button to start debugging.
+* Press the green 'play' button and enter file name `test.jl` to start debugging.
 
-You can now 'step through' the `test.jl` file, set and hit breakpoints, and run into exceptions (if the word exception appears in a line).
+You can now 'continue', 'step over' the `test.jl` file, set and hit breakpoints, view stacktrace and variables.
 
 ![Judy](https://raw.githubusercontent.com/judy-vscode/Adapter/develop/images/judy.gif)
 
@@ -29,8 +29,8 @@ You can now 'step through' the `test.jl` file, set and hit breakpoints, and run 
 
 * Clone the project [https://github.com/judy-vscode/Judy.git](https://github.com/judy-vscode/Judy.git)
 * Open the project folder in VS Code.
-* Press `F5` to build and launch Mock Debug in another VS Code window. In that window:
+* Press `F5` to build and launch Judy in another VS Code window. In that window:
   * Open a new workspace, create a new 'program' file `test.jl` and enter several lines of julia codes.
   * Switch to the debug viewlet and press the gear dropdown.
   * Select the debug environment "Judy".
-  * Press `F5` to start debugging.
+  * Press `F5` and enter file name `test.jl` to start debugging.
