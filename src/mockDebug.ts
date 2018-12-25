@@ -81,7 +81,12 @@ export class MockDebugSession extends LoggingDebugSession {
 			this.sendEvent(new TerminatedEvent());
 		});
 		this._herald.on('response', (result_data) => {
-			this.processResponse(result_data);
+			try {
+				this.processResponse(result_data);
+			}
+			finally {
+
+			}
 		});
 		console.log("construct new MockDebugSession done");
 	}
@@ -200,15 +205,15 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
-		var exec = require('child_process').exec;
-		exec('julia D:/judy-ast/judy.jl D:/judy-ast/test/test1.jl', function(stdin, stdout, stderr) {
-			console.log("stdout");
-			console.log(stdout);
-			console.log("stderr");
-			console.log(stderr);
-			console.log("stdin");
-			console.log(stdin);
-		});
+		// var exec = require('child_process').exec;
+		// exec('julia D:/judy-master2/judy-master/judy.jl D:/judy-master2/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
+		// 	console.log("stdout");
+		// 	console.log(stdout);
+		// 	console.log("stderr");
+		// 	console.log(stderr);
+		// 	console.log("stdin");
+		// 	console.log(stdin);
+		// });
 
 		// // build and return the capabilities of this debug adapter:
 		// response.body = response.body || {};
@@ -221,7 +226,6 @@ export class MockDebugSession extends LoggingDebugSession {
 
 		// // make VS Code to show a 'step back' button
 		// response.body.supportsStepBack = true;
-
 		this._herald.initialize();
 		this._responseState.push("initialize");
 		this._responseInterface = response;
