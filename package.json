@@ -1,7 +1,7 @@
 {
 	"name": "julia-debug",
 	"displayName": "Judy",
-	"version": "0.0.17",
+	"version": "0.0.18",
 	"publisher": "JudyTeam",
 	"description": "A debugger for Julia Programming Language",
 	"author": {

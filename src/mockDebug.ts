@@ -81,12 +81,7 @@ export class MockDebugSession extends LoggingDebugSession {
 			this.sendEvent(new TerminatedEvent());
 		});
 		this._herald.on('response', (result_data) => {
-			try {
 				this.processResponse(result_data);
-			}
-			finally {
-
-			}
 		});
 		console.log("construct new MockDebugSession done");
 	}
@@ -94,7 +89,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	protected processResponse(results) {
 		//TODO more response types, and maybe result error handler
 		var array: Array<any>;
-		if(results.length>1)
+		if(results.length>=1)
 			array = results;
 		else
 			array = new Array(results);
@@ -132,6 +127,7 @@ export class MockDebugSession extends LoggingDebugSession {
 					// debugger;
 					// console.log(actualBreakpoints.length);
 					// console.log(actualBreakpoints[0].id);
+					response.seq = 0;
 					response.body = {
 						breakpoints: actualBreakpoints
 					}
@@ -154,6 +150,7 @@ export class MockDebugSession extends LoggingDebugSession {
 						const stk = new StackFrame(result["frameId"], result["name"], this.createSource(result["path"]), this.convertDebuggerLineToClient(result["line"]));
 						return stk;
 					})
+					response.seq = 0;
 					response.body = {
 						stackFrames: actualStackFrames,
 						totalFrames: results.length
@@ -184,6 +181,7 @@ export class MockDebugSession extends LoggingDebugSession {
 							variablesReference: result["variablesReference"]
 						})
 					});
+					response.seq = 0;
 					response.body = {
 						variables: variables
 					};
@@ -281,6 +279,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// });
 		var lines = clientLines.map(l => this.convertClientLineToDebugger(l));
 		// var lines = clientLines.map(l => l);
+		// while(this._responseState.indexOf("setBreakPoints") != -1);
 		this._herald.setBreakPoints(path, lines);
 
 		this._responseState.push("setBreakPoints");
