@@ -223,7 +223,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// // make VS Code to show a 'step back' button
 		// response.body.supportsStepBack = true;
 		this._herald.initialize();
-		this._responseState.push("initialize");
+		this._responseState.unshift("initialize");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 
@@ -255,7 +255,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// start the program in the runtime
 		this._herald.start(args.program, !!args.stopOnEntry);
 
-		this._responseState.push("launch");
+		this._responseState.unshift("launch");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
@@ -280,7 +280,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// while(this._responseState.indexOf("setBreakPoints") != -1);
 		this._herald.setBreakPoints(path, lines);
 
-		this._responseState.push("setBreakPoints");
+		this._responseState.unshift("setBreakPoints");
 		this._responseInterface.unshift(response);
 		// send back the actual breakpoint positions
 		// response.body = {
@@ -311,7 +311,7 @@ export class MockDebugSession extends LoggingDebugSession {
 
 		const stk = this._herald.stack(startFrame, endFrame);
 
-		this._responseState.push("stackTrace");
+		this._responseState.unshift("stackTrace");
 		this._responseInterface.unshift(response);
 
 
@@ -335,7 +335,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	scopes: scopes
 		// };
 
-		this._responseState.push("scopes");
+		this._responseState.unshift("scopes");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
@@ -376,7 +376,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// 	variables: variables
 		// };
 
-		this._responseState.push("variables");
+		this._responseState.unshift("variables");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
@@ -384,7 +384,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		this._herald.continue();
 
-		this._responseState.push("continue");
+		this._responseState.unshift("continue");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
@@ -401,7 +401,7 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._herald.next();
-		this._responseState.push("next");
+		this._responseState.unshift("next");
 		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
