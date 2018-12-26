@@ -78,8 +78,8 @@ function readSourceToAST(file)
           push!(blocks, blockinfo)
           block_start = 0
         end
-        ast = Meta.lower(Main, ex)
-        push!(asts, ast)
+        # ast = Meta.lower(Main, ex)
+        push!(asts, ex)
         s = ""
       end
     end
@@ -92,7 +92,7 @@ end
 
 # run whole program
 # return a status contains ast, current_line
-function run()
+function run() 
   global FileLine
   global FileAst
   global RunFileStack
@@ -158,7 +158,7 @@ function tryRunNewFile(ast, isStepOver = false)
   end
   return isIncludeCall
 end
-
+    
 
 # update info from this point
 function Break()
@@ -176,15 +176,14 @@ function Break()
   DebugInfo.collectStackInfo()
   put!(kRunTimeOut, "collected")
   # wait until get "go on" info
-  sig = take!(kRunTimeIn)
-  if sig != "go on"
-    println("Error: Break() meets $(sig)")
-  end
+  # sig = take!(kRunTimeIn)
+  while take!(kRunTimeIn) != "go on" end
+    # println("Error: Break() meets $(sig)")
 end
 
 
 # go to next line
-# if next line is an empty line,
+# if next line is an empty line, 
 # we ignore this line and go until it's a valid ast
 function stepOver()
   global FileAst
@@ -242,6 +241,7 @@ function continous(stopOnPopFile = false)
   asts = FileAst[current_file].asts
   ast_index = getAstIndex(current_file, FileLine[current_file])
 
+
   for ast in asts[ast_index: end]
     try
       if !tryRunNewFile(ast)
@@ -266,6 +266,7 @@ function continous(stopOnPopFile = false)
         global errors
         errors = string(err)
         println("runtime errors: $(errors)")
+        break
       end
     end
   end
@@ -297,20 +298,21 @@ function setBreakPoints(filepath, lineno)
   id = 1
 
   for bpline in lineno
-    ast, ofs, realLineno = getRealPos(filepath, bpline)
-    print(realLineno)
+    ofs, realLineno = getRealPos(filepath, bpline)
     index = findfirst(isequal(bpline), lineno)
     lineno[index] = realLineno
     push!(result, Dict("verified" => true,
     "line" => realLineno,  #verify first non-blank line
     "id" => id))
     id += 1
-    if !isequal(Nothing,ast)
-      ast.args[2].args[ofs] = Expr(:call, Break)
+    if !isequal(Nothing,ofs)
       ast_index = getAstIndex(filepath, realLineno)
-      FileAst[filepath].asts[ast_index] = ast
+      ast = asts[ast_index]
+      ast.args[2].args[ofs] = Expr(:call, Break)
+      # FileAst[filepath].asts[ast_index] = ast
     end
   end
+  # println("ast",FileAst[filepath].asts)
   FileBp[filepath] = lineno
   return result
 end
@@ -324,7 +326,7 @@ function getRealPos(filepath, bpline)
     #The key to insert the point is when we revise a copy of function's ast,
     #and then eval the ast, we update the definition of the function
     #Another thing is we should make the mapping from original code pos to insert offset
-    #considering blank line
+    #considering blank line  
   for blockinfo in blocks
     if blockinfo.startline < bpline <= blockinfo.endline
       ast = parseInputLine(blockinfo.raw_code)
@@ -353,7 +355,7 @@ function getRealPos(filepath, bpline)
         ofs = 2 * nonBlankLine - 1
       end
       realLineno = firstNonBlankLine + blockinfo.startline - 1
-      return ast, ofs, realLineno
+      return ofs, realLineno
     #not in a block
     end
   end
@@ -371,8 +373,8 @@ function getRealPos(filepath, bpline)
       break
     end
   end
-  return Nothing, Nothing, firstNonBlankLine
-end
+  return Nothing, firstNonBlankLine
+end   
 
 
 # update line for run/next/continous call
@@ -407,9 +409,8 @@ function checkBreakPoint()
   global FileBp
   current_file = RunFileStack[end]
   current_line = FileLine[RunFileStack[end]]
-  ast, ofs, realLineno = getRealPos(current_file, current_line)
+  ofs, realLineno = getRealPos(current_file, current_line)
   FileLine[current_file] = realLineno
-  print("check",realLineno)
   if realLineno in FileBp[current_file]
     return true
   else
@@ -449,4 +450,4 @@ function parseInputLine(s::String; filename::String="none", depwarn=true)
   return ex
 end
 
-end # module RunTime
+end # module RunTime 

@@ -46,7 +46,7 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	private _responseState = new Array();
 
-	private _responseInterface;
+	private _responseInterface = new Array();
 
 	/**
 	 * Creates a new debug adapter that is used for one debug session.
@@ -96,9 +96,10 @@ export class MockDebugSession extends LoggingDebugSession {
 		// console.log(this._responseState)
 		// console.log(array);
 		// debugger;
-		if(this._responseState.length == 0) {
+		if(this._responseState.length == 0 || this._responseInterface.length == 0) {
 			return;
 		}
+		var tmpResponseInterface = this._responseInterface.pop();
 		switch(this._responseState.pop()) {
 			case "initialize":
 				((response: DebugProtocol.InitializeResponse) => {
@@ -107,12 +108,12 @@ export class MockDebugSession extends LoggingDebugSession {
 					response.body.supportsEvaluateForHovers = false;
 					response.body.supportsStepBack = false;
 					this.sendResponse(response);
-				})(this._responseInterface);
+				})(tmpResponseInterface);
 				break;
 			case "launch":
 				((response: DebugProtocol.LaunchResponse) => {
 					this.sendResponse(response);
-				})(this._responseInterface);
+				})(tmpResponseInterface);
 				break;
 			case "setBreakPoints":
 				((response: DebugProtocol.SetBreakpointsResponse, results: Array<any>) => {
@@ -127,22 +128,21 @@ export class MockDebugSession extends LoggingDebugSession {
 					// debugger;
 					// console.log(actualBreakpoints.length);
 					// console.log(actualBreakpoints[0].id);
-					response.seq = 0;
 					response.body = {
 						breakpoints: actualBreakpoints
 					}
 					this.sendResponse(response);
-				})(this._responseInterface, results);
+				})(tmpResponseInterface, results);
 				break;
 			case "continue":
 				((response: DebugProtocol.ContinueResponse) => {
 					this.sendResponse(response);
-				})(this._responseInterface);
+				})(tmpResponseInterface);
 				break;
 			case "next":
 				((response: DebugProtocol.NextResponse) => {
 					this.sendResponse(response);
-				})(this._responseInterface);
+				})(tmpResponseInterface);
 				break;
 			case "stackTrace":
 				((response: DebugProtocol.StackTraceResponse, results) => {
@@ -150,13 +150,12 @@ export class MockDebugSession extends LoggingDebugSession {
 						const stk = new StackFrame(result["frameId"], result["name"], this.createSource(result["path"]), this.convertDebuggerLineToClient(result["line"]));
 						return stk;
 					})
-					response.seq = 0;
 					response.body = {
 						stackFrames: actualStackFrames,
 						totalFrames: results.length
 					};
 					this.sendResponse(response);
-				})(this._responseInterface, array);
+				})(tmpResponseInterface, array);
 				break
 			case "scopes":
 				((response: DebugProtocol.ScopesResponse, results) => {
@@ -168,7 +167,7 @@ export class MockDebugSession extends LoggingDebugSession {
 						scopes: scopes
 					};
 					this.sendResponse(response);
-				})(this._responseInterface, array);
+				})(tmpResponseInterface, array);
 				break;
 			case "variables":
 				((response: DebugProtocol.VariablesResponse, results) => {
@@ -181,12 +180,11 @@ export class MockDebugSession extends LoggingDebugSession {
 							variablesReference: result["variablesReference"]
 						})
 					});
-					response.seq = 0;
 					response.body = {
 						variables: variables
 					};
 					this.sendResponse(response);
-				})(this._responseInterface, array);
+				})(tmpResponseInterface, array);
 				break;
 			default:
 				//throw error: wrong response massage
@@ -226,7 +224,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// response.body.supportsStepBack = true;
 		this._herald.initialize();
 		this._responseState.push("initialize");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 
 		// since this debug adapter can accept configuration requests like 'setBreakpoint' at any time,
@@ -258,7 +256,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.start(args.program, !!args.stopOnEntry);
 
 		this._responseState.push("launch");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
 
@@ -283,7 +281,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.setBreakPoints(path, lines);
 
 		this._responseState.push("setBreakPoints");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// send back the actual breakpoint positions
 		// response.body = {
 		// 	breakpoints: actualBreakpoints
@@ -314,7 +312,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		const stk = this._herald.stack(startFrame, endFrame);
 
 		this._responseState.push("stackTrace");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 
 
 		// response.body = {
@@ -338,7 +336,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// };
 
 		this._responseState.push("scopes");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
 
@@ -379,7 +377,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		// };
 
 		this._responseState.push("variables");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
 
@@ -387,7 +385,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.continue();
 
 		this._responseState.push("continue");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
 
@@ -404,7 +402,7 @@ export class MockDebugSession extends LoggingDebugSession {
 	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		this._herald.next();
 		this._responseState.push("next");
-		this._responseInterface = response;
+		this._responseInterface.unshift(response);
 		// this.sendResponse(response);
 	}
 

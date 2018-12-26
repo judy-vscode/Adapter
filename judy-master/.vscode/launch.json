@@ -10,7 +10,7 @@
             "name": "Ask for file name",
             "program": "${workspaceFolder}/${command:AskForProgramName}",
             "stopOnEntry": false,
-            // "debugServer": 4711
+            "debugServer": 4711
         }
     ]
 }
