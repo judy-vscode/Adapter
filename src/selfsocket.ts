@@ -1,7 +1,7 @@
 import { Server } from "http";
 import {parse, format} from 'json-rpc-protocol';
 import { EventEmitter } from 'events';
-import { SSL_OP_EPHEMERAL_RSA } from "constants";
+import { SSL_OP_EPHEMERAL_RSA, ENGINE_METHOD_STORE } from "constants";
 import * as net from 'net';
 import * as vscode from 'vscode';
 import { PassThrough } from "stream";
@@ -35,7 +35,22 @@ export class herald  extends EventEmitter {
 			console.log('server is listening');
 		});
 		var exec = require('child_process').exec;
-		exec('julia D:\\Judy_nightly_build/judy-vscode/judy-master/judy.jl', function(stdin, stdout, stderr) {
+		function getExePath(extName) {
+			var strPath   = process.env['PATH']
+			console.log(strPath);
+			var nodePath  = strPath.split(';').filter((str) => {
+			  if (str.toLowerCase().indexOf(extName.toLowerCase()) > 0) {
+				return true;
+			  }
+			}) || []
+
+			return nodePath[0]
+		  }
+		var judyDir = getExePath('judy');
+		console.log(judyDir);
+		var path = require('path');
+		var judyPath = path.join(judyDir, 'judy.jl');
+		exec('julia ' + judyPath, function(stdin, stdout, stderr) {
 			console.log("stdout");
 			console.log(stdout);
 			console.log("stderr");
