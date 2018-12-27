@@ -1,7 +1,7 @@
 {
 	"name": "julia-debug",
 	"displayName": "Judy",
-	"version": "0.0.18",
+	"version": "0.0.20",
 	"publisher": "JudyTeam",
 	"description": "A debugger for Julia Programming Language",
 	"author": {
@@ -16,7 +16,7 @@
 		"vscode": "^1.29.0",
 		"node": "^8.9.3"
 	},
-	"icon": "images/chaoyue.jpg",
+	"icon": "images/ju.png",
 	"categories": [
 		"Debuggers"
 	],
@@ -88,6 +88,15 @@
 								"description": "Automatically stop after launch.",
 								"default": false
 							},
+							"console": {
+                                "enum": [
+                                    "none",
+                                    "integratedTerminal",
+                                    "externalTerminal"
+                                ],
+                                "description": "Where to launch the debug target: internal console, integrated terminal, or external terminal.",
+                                "default": "integratedTerminal"
+                            },
 							"trace": {
 								"type": "boolean",
 								"description": "Enable logging of the Debug Adapter Protocol.",
@@ -98,11 +107,12 @@
 				},
 				"initialConfigurations": [
 					{
-						"type": "node",
+						"type": "judy",
 						"request": "launch",
 						"name": "Ask for file name",
 						"program": "${workspaceFolder}/${command:AskForProgramName}",
-						"stopOnEntry": false
+						"stopOnEntry": false,
+						"console": "integratedTerminal"
 
 					}
 				],
