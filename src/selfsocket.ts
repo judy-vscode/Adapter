@@ -34,7 +34,7 @@ export class herald  extends EventEmitter {
 		this.svr.listen(18001, function() {
 			console.log('server is listening');
 		});
-		var exec = require('child_process').exec;
+		const { spawn } = require('child_process');
 		function getExePath(extName) {
 			var strPath   = process.env['PATH']
 			console.log(strPath);
@@ -50,13 +50,17 @@ export class herald  extends EventEmitter {
 		console.log(judyDir);
 		var path = require('path');
 		var judyPath = path.join(judyDir, 'judy.jl');
-		exec('julia ' + judyPath, function(stdin, stdout, stderr) {
-			console.log("stdout");
-			console.log(stdout);
-			console.log("stderr");
-			console.log(stderr);
-			console.log("stdin");
-			console.log(stdin);
+		const child = spawn('julia', [judyPath]);
+		child.stdout.on('data', (data) => {
+			console.log(`child stdout:\n${data}`);
+			this.sendEvent('output', [data, ])
+		})
+		child.stderr.on('data', (data) => {
+			console.log(`child stderr:\n${data}`);
+		})
+		child.on('exit', function (code, signal) {
+			console.log('child process exited with ' +
+						`code ${code} and signal ${signal}`);
 		});
 		// set time out DO NOT DELETE!!!
 		// wait until debugger open socket

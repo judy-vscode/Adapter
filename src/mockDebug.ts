@@ -70,7 +70,7 @@ export class MockDebugSession extends LoggingDebugSession {
 		this._herald.on('stopped', (data) => {
 			this.sendEvent(new StoppedEvent(data["reason"], MockDebugSession.THREAD_ID));
 		});
-		this._herald.on('output', (text, filePath, line, column) => {
+		this._herald.on('output', (text, filePath = 'Judy.jl', line = 1, column = 1) => {
 			const e: DebugProtocol.OutputEvent = new OutputEvent(`${text}\n`);
 			e.body.source = this.createSource(filePath);
 			e.body.line = this.convertDebuggerLineToClient(line);
@@ -105,6 +105,8 @@ export class MockDebugSession extends LoggingDebugSession {
 				((response: DebugProtocol.InitializeResponse) => {
 					response.body = response.body || {};
 					response.body.supportsConfigurationDoneRequest = true;
+					response.body.supportsStepInTargetsRequest = false;
+					response.body.supportsSetExpression = false;
 					response.body.supportsEvaluateForHovers = false;
 					response.body.supportsStepBack = false;
 					this.sendResponse(response);
@@ -201,27 +203,10 @@ export class MockDebugSession extends LoggingDebugSession {
 
 	protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
 
-		// var exec = require('child_process').exec;
-		// exec('julia D:/judy-master2/judy-master/judy.jl D:/judy-master2/judy-master/test/test1.jl', function(stdin, stdout, stderr) {
-		// 	console.log("stdout");
-		// 	console.log(stdout);
-		// 	console.log("stderr");
-		// 	console.log(stderr);
-		// 	console.log("stdin");
-		// 	console.log(stdin);
-		// });
-
 		// // build and return the capabilities of this debug adapter:
 		// response.body = response.body || {};
 
-		// // the adapter implements the configurationDoneRequest.
-		// response.body.supportsConfigurationDoneRequest = true;
 
-		// // make VS Code to use 'evaluate' when hovering over source
-		// response.body.supportsEvaluateForHovers = true;
-
-		// // make VS Code to show a 'step back' button
-		// response.body.supportsStepBack = true;
 		this._herald.initialize();
 		this._responseState.unshift("initialize");
 		this._responseInterface.unshift(response);
