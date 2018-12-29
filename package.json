@@ -1,7 +1,7 @@
 {
 	"name": "julia-debug",
 	"displayName": "Judy",
-	"version": "0.0.22",
+	"version": "0.0.23",
 	"publisher": "JudyTeam",
 	"description": "A debugger for Julia Programming Language",
 	"author": {
@@ -16,7 +16,7 @@
 		"vscode": "^1.29.0",
 		"node": "^8.9.3"
 	},
-	"icon": "images/ju.png",
+	"icon": "images/judy.png",
 	"categories": [
 		"Debuggers"
 	],
